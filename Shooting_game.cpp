@@ -33,12 +33,6 @@ int playerY;
 int enemyX;
 int enemyY;
 
-//아이템 좌표
-int itemX;
-int itemY;
-//아이템 타입
-int itemType;
-
 //미사일 갯수
 BULLET playerBullet[21];
 
@@ -47,23 +41,24 @@ ITEM items[3];
 
 //함수 설계
 void ClearScreen(); //화면을 지운다
-void GameMain(int *lif, int *score, int level);	//게임전체를 관리하는 함수
+void GameMain(int *lif, int *score, int level, int *power);	//게임전체를 관리하는 함수
 void PrintScreen(int lvl, int lif, int score);	//화면을 그려주는 함수
 void KeyControl();	//키관련 함수
-void BulletDraw();	//미사일을 그려주는 함수
+void BulletDraw(int *power);	//미사일을 그려주는 함수
 void PlayerDraw();	//플레이어 그리는 함수
 void EnemyDraw();	//적그리는 함수
 void EnemyMove(int *life);	//적움직이는 함수
-void ClashEnemyAndBullet(int *score, int level);	//충돌처리 함수
-void ItemCreate();
-void ItemDraw();
-void ClashItemAndPlayer();
+void ClashEnemyAndBullet(int *score, int level, int *power);	//충돌처리 함수
+void ItemCreate();	//아이템 생성 함수
+void ItemDraw();	//아이템 그리는 함수
+void ClashItemAndPlayer(int *life, int *power);	//충돌처리 함수
 
 void main() {
 	int speed = 30;	//게임 속도 
 	int level = 1;	//게임 난이도
-	int life = 3;	//남은 목숨
+	int life = 100;	//남은 목숨
 	int score = 0;	//스코어
+	int power = 1;
 	//랜덤함수 준비
 	srand((unsigned)time(NULL));
 	//플레이어 좌표 위치
@@ -99,7 +94,7 @@ void main() {
 			//지우는 함수
 			ClearScreen();
 			//플레이어나 적이 움직이는 함수
-			GameMain(&life, &score, level);
+			GameMain(&life, &score, level, &power);
 			//그려주는 함수
 			PrintScreen(level, life, score);
 		}
@@ -112,7 +107,7 @@ void main() {
 			//지우는 함수
 			ClearScreen();
 			//플레이어나 적이 움직이는 함수
-			GameMain(&life, &score, level);
+			GameMain(&life, &score, level, &power);
 			//그려주는 함수
 			PrintScreen(level, life, score);
 		}
@@ -138,12 +133,12 @@ void ClearScreen()
 	}
 }
 
-void GameMain(int *life, int *score, int level)
+void GameMain(int *life, int *score, int level, int *power)
 {
 	//키를 입력하는 부분
 	KeyControl();
 	//미사일을 그려주는 부분
-	BulletDraw();
+	BulletDraw(power);
 	//플레이어를 그려주는 부분
 	PlayerDraw();
 	//적의 움직임
@@ -151,9 +146,11 @@ void GameMain(int *life, int *score, int level)
 	//적을 그려주는 부분
 	EnemyDraw();
 	//미사일과 적 충돌
-	ClashEnemyAndBullet(score, level);
+	ClashEnemyAndBullet(score, level, power);
 	//아이템 그리기
 	ItemDraw();
+	//플레이어와 아이템 충돌
+	ClashItemAndPlayer(life, power);
 
 }
 
@@ -219,15 +216,36 @@ void KeyControl()
 	}
 }
 
-void BulletDraw()
+void BulletDraw(int *power)
 {
 	//미사일 전체 20개중에
 	for (int i = 0; i < 20; i++) {
 		//플레이어 미사일 날아가고 있는 상태 true
 		if (playerBullet[i].fire == true) {
 			//미사일을 그린다.
-			bg[playerBullet[i].y][playerBullet[i].x - 1] = '-';
-			bg[playerBullet[i].y][playerBullet[i].x - 0] = '>';
+			for (int j = -*power + 1; j < *power; j++) {
+				if (playerBullet[i].y + j < 25 && playerBullet[i].y + j >= 0)
+				bg[playerBullet[i].y + j][playerBullet[i].x - 0] = ')';
+			}
+
+
+			/*switch (*power) {
+			case 1:
+				bg[playerBullet[i].y - 0][playerBullet[i].x - 0] = ')';
+				break;
+			case 2:
+				bg[playerBullet[i].y - 1][playerBullet[i].x - 0] = ')';
+				bg[playerBullet[i].y - 0][playerBullet[i].x - 0] = ')';
+				bg[playerBullet[i].y + 1][playerBullet[i].x - 0] = ')';
+				break;
+			case 3:
+				bg[playerBullet[i].y - 2][playerBullet[i].x - 0] = ')';
+				bg[playerBullet[i].y - 1][playerBullet[i].x - 0] = ')';
+				bg[playerBullet[i].y - 0][playerBullet[i].x - 0] = ')';
+				bg[playerBullet[i].y + 1][playerBullet[i].x - 0] = ')';
+				bg[playerBullet[i].y + 2][playerBullet[i].x - 0] = ')';
+				break;
+			}*/
 			//미사일 앞으로 +1
 			playerBullet[i].x++;
 			if (playerBullet[i].x > XMAX-1) {
@@ -275,13 +293,13 @@ void EnemyMove(int *life)
 	}
 }
 
-void ClashEnemyAndBullet(int *score, int level)
+void ClashEnemyAndBullet(int *score, int level, int *power)
 {
 	//미사일이 20개 전체 판별
 	for (int i = 0; i < 20; i++) {
 		if (playerBullet[i].fire == true) {
 			//적과 미사일의 y값이 같고
-			if (playerBullet[i].y == enemyY) {
+			if (playerBullet[i].y >= (enemyY - *power + 1) && playerBullet[i].y <= (enemyY + *power - 1)) {
 				//플레이어 미사일 x값이 같은지 판별
 				//x값은 적의 크기만큼 x-1 x+1까지 세개 좌표로 충돌되게 판별
 				if (playerBullet[i].x >= (enemyX - 1) && playerBullet[i].x <= (enemyX + 1)) {
@@ -303,9 +321,10 @@ void ItemCreate() {
 		if (items[i].exist == false) {
 			items[i].exist = true;
 			//아이템 랜덤 생성
-			items[i].x = (rand() % 20) + 2;
-			items[i].y = (rand() % 3) + 1;
+			items[i].x = (rand() % 3) + 1;
+			items[i].y = (rand() % 20) + 2;
 			items[i].type = (rand() % 2);
+			break;
 		}
 	}
 }
@@ -315,16 +334,16 @@ void ItemDraw() {
 	for (int i = 0; i < 3; i++) {
 		if (items[i].exist == true) {
 			if (items[i].type == 1) {
-				bg[items[i].x][items[i].y] = 'L';
+				bg[items[i].y][items[i].x] = 'L';
 			}
 			else {
-				bg[items[i].x][items[i].y] = 'P';
+				bg[items[i].y][items[i].x] = 'P';
 			}
 		}
 	}
 }
 
-void ClashItemAndPlayer()
+void ClashItemAndPlayer(int *life, int *power)
 {
 	//아이템이 3개 판별
 	for (int i = 0; i < 3; i++) {
@@ -334,9 +353,18 @@ void ClashItemAndPlayer()
 				//플레이어와 아이템 X값이 +-1까지 충돌가능하게 판별
 				if (items[i].x >= (playerX - 1) && items[i].x <= (playerX + 1)) {
 					//충돌되면 아이템 획득하기
-
+					if (items[i].type == 1) {
+						*life = *life + 1;
+					}
+					else {
+						if (*power < 10) {
+							*power = *power + 1;
+						}
+						else {
+							*life = *life + 1;
+						}
+					}
 					items[i].exist = false;
-					playerX = 1;
 				}
 			}
 		}
