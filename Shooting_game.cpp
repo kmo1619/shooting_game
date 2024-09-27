@@ -30,16 +30,20 @@ BULLET playerBullet[21];
 
 //함수 설계
 void ClearScreen(); //화면을 지운다
-void GameMain();	//게임전체를 관리하는 함수
-void PrintScreen();	//화면을 그려주는 함수
+void GameMain(int *lif, int *score, int level);	//게임전체를 관리하는 함수
+void PrintScreen(int lvl, int lif, int score);	//화면을 그려주는 함수
 void KeyControl();	//키관련 함수
 void BulletDraw();	//미사일을 그려주는 함수
 void PlayerDraw();	//플레이어 그리는 함수
 void EnemyDraw();	//적그리는 함수
-void EnemyMove();	//적움직이는 함수
-void ClashEnemyAndBullet();	//충돌처리 함수
+void EnemyMove(int *life);	//적움직이는 함수
+void ClashEnemyAndBullet(int *score, int level);	//충돌처리 함수
 
 void main() {
+	int speed = 50;	//게임 속도 
+	int level = 1;	//게임 난이도
+	int life = 3;	//남은 목숨
+	int score = 0;	//스코어
 	//랜덤함수 준비
 	srand((unsigned)time(NULL));
 	//플레이어 좌표 위치
@@ -59,18 +63,29 @@ void main() {
 
 	//초단위 시간을 받아옴
 	int dwTime = GetTickCount64();
-
+	int stTime = GetTickCount64();
 	//게임실행 무한루프
 	while (true) {
-		//0.015초 딜레이
-		if (dwTime + 15 < GetTickCount64()) {
+		if (dwTime + speed < GetTickCount64()) {
 			dwTime = GetTickCount64();
 			//지우는 함수
 			ClearScreen();
 			//플레이어나 적이 움직이는 함수
-			GameMain();
+			GameMain(&life, &score, level);
 			//그려주는 함수
-			PrintScreen();
+			PrintScreen(level, life, score);
+		}
+		if (stTime + 10000 < GetTickCount64()) {
+			speed = speed - 5;
+			level++;
+			stTime = GetTickCount64();
+		}
+		if (life == 0) {
+			//콘솔창을 지움
+			system("cls");
+			//배열에 공백으로 넣어서 지움
+			printf("gameover");
+			break;
 		}
 	}
 }
@@ -87,7 +102,7 @@ void ClearScreen()
 	}
 }
 
-void GameMain()
+void GameMain(int *life, int *score, int level)
 {
 	//키를 입력하는 부분
 	KeyControl();
@@ -96,18 +111,20 @@ void GameMain()
 	//플레이어를 그려주는 부분
 	PlayerDraw();
 	//적의 움직임
-	EnemyMove();
+	EnemyMove(life);
 	//적을 그려주는 부분
 	EnemyDraw();
 	//미사일과 적 충돌
-	ClashEnemyAndBullet();
+	ClashEnemyAndBullet(score, level);
 
 }
 
-void PrintScreen()
+void PrintScreen(int lvl, int life, int score)
 {
 	bg[YMAX-1][XMAX-1] = '\0';
-	printf("%s", bg);
+	printf("%s\n", bg);
+	printf("	Level = %i			life = %i				score = %i", lvl,life,score);
+	
 }
 
 void KeyControl()
@@ -205,7 +222,7 @@ void EnemyDraw()
 	bg[enemyY][enemyX + 2] = '>';
 }
 
-void EnemyMove()
+void EnemyMove(int *life)
 {
 	//적은 왼쪽으로 오게 한다.
 	enemyX--;
@@ -215,10 +232,11 @@ void EnemyMove()
 		//적을 랜덤하게 y쪽 좌표를 바꿔준다
 		enemyX = 77;
 		enemyY = (rand() % 20) + 2;
+		*life = *life - 1;
 	}
 }
 
-void ClashEnemyAndBullet()
+void ClashEnemyAndBullet(int *score, int level)
 {
 	//미사일이 20개 전체 판별
 	for (int i = 0; i < 20; i++) {
@@ -232,6 +250,7 @@ void ClashEnemyAndBullet()
 					enemyX = 77;
 					enemyY = (rand() % 20) + 2;
 					playerBullet[i].fire = false;
+					*score = *score + 100 * level;
 				}
 			}
 		}
