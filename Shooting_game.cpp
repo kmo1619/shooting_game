@@ -42,7 +42,7 @@ ITEM items[3];
 //함수 설계
 void ClearScreen(); //화면을 지운다
 void GameMain(int *lif, int *score, int level, int *power);	//게임전체를 관리하는 함수
-void PrintScreen(int lvl, int lif, int score);	//화면을 그려주는 함수
+void PrintScreen(int lvl, int lif, int score, int power);	//화면을 그려주는 함수
 void KeyControl();	//키관련 함수
 void BulletDraw(int *power);	//미사일을 그려주는 함수
 void PlayerDraw();	//플레이어 그리는 함수
@@ -54,9 +54,9 @@ void ItemDraw();	//아이템 그리는 함수
 void ClashItemAndPlayer(int *life, int *power);	//충돌처리 함수
 
 void main() {
-	int speed = 30;	//게임 속도 
+	int speed = 50;	//게임 속도 
 	int level = 1;	//게임 난이도
-	int life = 100;	//남은 목숨
+	int life = 3;	//남은 목숨
 	int score = 0;	//스코어
 	int power = 1;
 	//랜덤함수 준비
@@ -96,9 +96,9 @@ void main() {
 			//플레이어나 적이 움직이는 함수
 			GameMain(&life, &score, level, &power);
 			//그려주는 함수
-			PrintScreen(level, life, score);
+			PrintScreen(level, life, score, power);
 		}
-		if (stTime + 1000 < GetTickCount64()) {
+		if (stTime + 10000 < GetTickCount64()) {
 			speed = speed - 5;
 			level++;
 			stTime = GetTickCount64();
@@ -109,7 +109,7 @@ void main() {
 			//플레이어나 적이 움직이는 함수
 			GameMain(&life, &score, level, &power);
 			//그려주는 함수
-			PrintScreen(level, life, score);
+			PrintScreen(level, life, score, power);
 		}
 		if (life == 0) {
 			//콘솔창을 지움
@@ -154,11 +154,11 @@ void GameMain(int *life, int *score, int level, int *power)
 
 }
 
-void PrintScreen(int lvl, int life, int score)
+void PrintScreen(int lvl, int life, int score,int power)
 {
 	bg[YMAX-1][XMAX-1] = '\0';
 	printf("%s\n", bg);
-	printf("	Level = %i			life = %i				score = %i", lvl,life,score);
+	printf("	Level = %i		life = %i/3		power = %i		score = %i", lvl,life,power,score);
 	
 }
 
@@ -353,16 +353,11 @@ void ClashItemAndPlayer(int *life, int *power)
 				//플레이어와 아이템 X값이 +-1까지 충돌가능하게 판별
 				if (items[i].x >= (playerX - 1) && items[i].x <= (playerX + 1)) {
 					//충돌되면 아이템 획득하기
-					if (items[i].type == 1) {
+					if (items[i].type == 1 && *life < 3) {
 						*life = *life + 1;
 					}
-					else {
-						if (*power < 10) {
-							*power = *power + 1;
-						}
-						else {
-							*life = *life + 1;
-						}
+					if (items[i].type == 0 && *power < 7){
+						*power = *power + 1;
 					}
 					items[i].exist = false;
 				}
